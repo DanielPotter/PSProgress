@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Management.Automation;
-using System.Management.Automation.Runspaces;
 
 namespace PSProgress
 {
@@ -145,12 +143,7 @@ namespace PSProgress
             }
             else
             {
-                statusDescription = InvokeCommand.InvokeScript(
-                    script: Status.ToString(),
-                    useNewScope: false,
-                    writeToPipeline: PipelineResultTypes.Output,
-                    input: null,
-                    args: item).FirstOrDefault()?.ToString() ?? "Processing";
+                statusDescription = ScriptBlock.Create("$_ = $args[0]; " + Status.ToString()).InvokeReturnAsIs(item)?.ToString() ?? "Processing";
             }
 
             var progressRecord = new ProgressRecord(activityId: Id, activity: Activity, statusDescription: statusDescription);
@@ -162,12 +155,7 @@ namespace PSProgress
 
             if (CurrentOperation != null)
             {
-                string operationDescription = InvokeCommand.InvokeScript(
-                    script: Status.ToString(),
-                    useNewScope: false,
-                    writeToPipeline: PipelineResultTypes.Output,
-                    input: null,
-                    args: item).FirstOrDefault()?.ToString() ?? string.Empty;
+                string operationDescription = ScriptBlock.Create("$_ = $args[0]; " + CurrentOperation.ToString()).InvokeReturnAsIs(item)?.ToString() ?? string.Empty;
                 progressRecord.CurrentOperation = operationDescription;
             }
 

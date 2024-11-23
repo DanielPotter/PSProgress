@@ -1,5 +1,7 @@
 BeforeAll {
     $Script:DefaultDateTimeProvider = [PSProgress.DateTimeProvider]::Default
+    $Script:ProgressCompletePattern = 'Progress (?<id>\d+), Activity=<(?<activity>[^>]*)>, Completed'
+    $Script:ProgressProcessingPattern = 'Progress (?<id>\d+), Activity=<(?<activity>[^>]*)>, Status=<(?<status>[^>]*)>, Operation=<(?<operation>[^>]*)>, PercentComplete=<(?<percentComplete>-?\d*)>, SecondsRemaining=<(?<secondsRemaining>-?\d*)>'
 }
 
 Describe 'Write-PipelineProgress' {
@@ -54,9 +56,7 @@ Describe 'Write-PipelineProgress' {
         }
 
         $resultIndex = [ref] 0
-        $items | ForEach-Object {
-            Write-Output $_
-        } | Write-PipelineProgress -Activity $activity @forceDisplayParameters -Debug 5>&1 | ForEach-Object {
+        $items | Write-PipelineProgress -Activity $activity @forceDisplayParameters -Debug 5>&1 | ForEach-Object {
             $expectedResult = $expectedResults[$resultIndex.Value]
             if ($expectedResult -is [int]) {
                 $_ | Should -Be $expectedResult
@@ -65,18 +65,16 @@ Describe 'Write-PipelineProgress' {
             else {
                 $_ | Should -BeOfType [System.Management.Automation.DebugRecord]
                 if ($expectedResult.Complete) {
-                    $completePattern = 'Progress (?<id>\d+), Activity=<(?<activity>[^>]*)>, Completed'
-                    $_.Message | Should -Match $completePattern
-                    if ($_.Message -match $completePattern) {
+                    $_.Message | Should -Match $Script:ProgressCompletePattern
+                    if ($_.Message -match $Script:ProgressCompletePattern) {
                         if ($expectedResult.Activity) {
                             $Matches.activity | Should -Be $expectedResult.Activity
                         }
                     }
                 }
                 else {
-                    $progressPattern = 'Progress (?<id>\d+), Activity=<(?<activity>[^>]*)>, Status=<(?<status>[^>]*)>, Operation=<(?<operation>[^>]*)>, PercentComplete=<(?<percentComplete>-?\d*)>, SecondsRemaining=<(?<secondsRemaining>-?\d*)>'
-                    $_.Message | Should -Match $progressPattern
-                    if ($_.Message -match $progressPattern) {
+                    $_.Message | Should -Match $Script:ProgressProcessingPattern
+                    if ($_.Message -match $Script:ProgressProcessingPattern) {
                         if ($expectedResult.Activity) {
                             $Matches.activity | Should -Be $expectedResult.Activity
                         }
@@ -90,6 +88,82 @@ Describe 'Write-PipelineProgress' {
                 }
             }
             $resultIndex.Value++
+        }
+    }
+
+    Context 'Status' {
+        It 'Executes with $_ automatic variable' {
+            $forceDisplayParameters = @{
+                # Setting these to 0 will force progress to always be written.
+                RefreshInterval = New-TimeSpan
+                DisplayThreshold = New-TimeSpan
+                MinimumTimeLeftToDisplay = New-TimeSpan
+            }
+
+            $expectedValue = 42
+            $result = $expectedValue | Write-PipelineProgress -Activity "Activity" @forceDisplayParameters -Status { $_ } -Debug 5>&1 | Select-Object -First 1
+
+            $result | Should -BeOfType [System.Management.Automation.DebugRecord]
+            $result.Message | Should -Match $Script:ProgressProcessingPattern
+            if ($result.Message -match $Script:ProgressProcessingPattern) {
+                $Matches.status | Should -Be $expectedValue.ToString()
+            }
+        }
+
+        It 'Can access local variables' {
+            $forceDisplayParameters = @{
+                # Setting these to 0 will force progress to always be written.
+                RefreshInterval = New-TimeSpan
+                DisplayThreshold = New-TimeSpan
+                MinimumTimeLeftToDisplay = New-TimeSpan
+            }
+
+            $expectedValue = 42
+            $result = 1 | Write-PipelineProgress -Activity "Activity" @forceDisplayParameters -Status { $expectedValue } -Debug 5>&1 | Select-Object -First 1
+
+            $result | Should -BeOfType [System.Management.Automation.DebugRecord]
+            $result.Message | Should -Match $Script:ProgressProcessingPattern
+            if ($result.Message -match $Script:ProgressProcessingPattern) {
+                $Matches.status | Should -Be $expectedValue.ToString()
+            }
+        }
+    }
+
+    Context 'CurrentOperation' {
+        It 'Executes with $_ automatic variable' {
+            $forceDisplayParameters = @{
+                # Setting these to 0 will force progress to always be written.
+                RefreshInterval = New-TimeSpan
+                DisplayThreshold = New-TimeSpan
+                MinimumTimeLeftToDisplay = New-TimeSpan
+            }
+
+            $expectedValue = 42
+            $result = $expectedValue | Write-PipelineProgress -Activity "Activity" @forceDisplayParameters -CurrentOperation { $_ } -Debug 5>&1 | Select-Object -First 1
+
+            $result | Should -BeOfType [System.Management.Automation.DebugRecord]
+            $result.Message | Should -Match $Script:ProgressProcessingPattern
+            if ($result.Message -match $Script:ProgressProcessingPattern) {
+                $Matches.operation | Should -Be $expectedValue.ToString()
+            }
+        }
+
+        It 'Can access local variables' {
+            $forceDisplayParameters = @{
+                # Setting these to 0 will force progress to always be written.
+                RefreshInterval = New-TimeSpan
+                DisplayThreshold = New-TimeSpan
+                MinimumTimeLeftToDisplay = New-TimeSpan
+            }
+
+            $expectedValue = 42
+            $result = 1 | Write-PipelineProgress -Activity "Activity" @forceDisplayParameters -CurrentOperation { $expectedValue } -Debug 5>&1 | Select-Object -First 1
+
+            $result | Should -BeOfType [System.Management.Automation.DebugRecord]
+            $result.Message | Should -Match $Script:ProgressProcessingPattern
+            if ($result.Message -match $Script:ProgressProcessingPattern) {
+                $Matches.operation | Should -Be $expectedValue.ToString()
+            }
         }
     }
 }
