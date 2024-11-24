@@ -1,5 +1,2 @@
-& $PSScriptRoot\Build.ps1
-
-& $PSScriptRoot\RunMSTests.ps1
-
+& $PSScriptRoot\BuildAndRunMSTests.ps1
 & $PSScriptRoot\RunPesterTests.ps1
