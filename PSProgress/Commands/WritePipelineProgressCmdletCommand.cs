@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Management.Automation;
 
-namespace PSProgress
+namespace PSProgress.Commands
 {
     [Cmdlet(VerbsCommunications.Write, "PipelineProgress")]
     public class WritePipelineProgressCmdletCommand : PSCmdlet
