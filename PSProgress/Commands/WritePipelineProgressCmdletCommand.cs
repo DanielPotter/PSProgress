@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Management.Automation;
 
@@ -9,7 +9,7 @@ namespace PSProgress.Commands
     {
         #region Fields
 
-        private readonly ProgressContext _progressContext = new ProgressContext();
+        private ProgressSession _progressSession;
 
         private readonly List<object> _allItems = new List<object>();
 
@@ -60,24 +60,36 @@ namespace PSProgress.Commands
         {
             base.BeginProcessing();
 
+            _progressSession = new ProgressSession(Activity, MyInvocation.BoundParameters.ContainsKey(nameof(Id)) ? (int?)Id : null);
+
+            if (MyInvocation.BoundParameters.ContainsKey(nameof(Status)))
+            {
+                _progressSession.Status = Status;
+            }
+
+            if (MyInvocation.BoundParameters.ContainsKey(nameof(CurrentOperation)))
+            {
+                _progressSession.CurrentOperation = CurrentOperation;
+            }
+
             if (MyInvocation.BoundParameters.ContainsKey(nameof(RefreshInterval)))
             {
-                _progressContext.RefreshInterval = RefreshInterval;
+                _progressSession.Context.RefreshInterval = RefreshInterval;
             }
 
             if (MyInvocation.BoundParameters.ContainsKey(nameof(DisplayThreshold)))
             {
-                _progressContext.DisplayThreshold = DisplayThreshold;
+                _progressSession.Context.DisplayThreshold = DisplayThreshold;
             }
 
             if (MyInvocation.BoundParameters.ContainsKey(nameof(MinimumTimeLeftToDisplay)))
             {
-                _progressContext.MinimumTimeLeftToDisplay = MinimumTimeLeftToDisplay;
+                _progressSession.Context.MinimumTimeLeftToDisplay = MinimumTimeLeftToDisplay;
             }
 
             if (MyInvocation.BoundParameters.ContainsKey(nameof(ExpectedCount)))
             {
-                _progressContext.ExpectedItemCount = (uint)ExpectedCount;
+                _progressSession.Context.ExpectedItemCount = (uint)ExpectedCount;
             }
             else
             {
@@ -97,8 +109,7 @@ namespace PSProgress.Commands
 
             foreach (var item in InputObject)
             {
-                HandleProgressSample(item, _progressContext.AddSample());
-                WriteObject(item);
+                HandleItem(item);
             }
         }
 
@@ -108,7 +119,7 @@ namespace PSProgress.Commands
 
             if (_autoCountItems)
             {
-                _progressContext.ExpectedItemCount = (uint)_allItems.Count;
+                _progressSession.Context.ExpectedItemCount = (uint)_allItems.Count;
                 if (_allItems.Count == 0)
                 {
                     return;
@@ -116,8 +127,7 @@ namespace PSProgress.Commands
 
                 foreach (var item in _allItems)
                 {
-                    HandleProgressSample(item, _progressContext.AddSample());
-                    WriteObject(item);
+                    HandleItem(item);
                 }
             }
 
@@ -129,57 +139,21 @@ namespace PSProgress.Commands
 
         #endregion
 
-        private void HandleProgressSample(object item, SampledProgressInfo progressInfo)
+        private void HandleItem(object item)
         {
-            if (progressInfo is null)
+            var progressInfo = _progressSession.Context.AddSample();
+            if (progressInfo != null)
             {
-                return;
+                var progressRecord = _progressSession.CreateProgressRecord(progressInfo, item);
+                WriteProgressInternal(progressRecord);
             }
 
-            string statusDescription;
-            if (Status is null)
-            {
-                statusDescription = $"{progressInfo.ItemIndex} / {ExpectedCount} ({progressInfo.PercentComplete:P})";
-            }
-            else
-            {
-                statusDescription = ScriptBlock.Create("$_ = $args[0]; " + Status.ToString()).InvokeReturnAsIs(item)?.ToString() ?? "Processing";
-            }
-
-            var progressRecord = new ProgressRecord(activityId: Id, activity: Activity, statusDescription: statusDescription);
-
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(ParentId)))
-            {
-                progressRecord.ParentActivityId = ParentId;
-            }
-
-            if (CurrentOperation != null)
-            {
-                string operationDescription = ScriptBlock.Create("$_ = $args[0]; " + CurrentOperation.ToString()).InvokeReturnAsIs(item)?.ToString() ?? string.Empty;
-                progressRecord.CurrentOperation = operationDescription;
-            }
-
-            if (progressInfo.EstimatedTimeRemaining.HasValue)
-            {
-                progressRecord.SecondsRemaining = (int)progressInfo.EstimatedTimeRemaining.Value.TotalSeconds;
-            }
-
-            progressRecord.PercentComplete = (int)(progressInfo.PercentComplete * 100);
-
-            WriteProgressInternal(progressRecord);
+            WriteObject(item);
         }
 
         private void WriteProgressInternal(ProgressRecord progressRecord)
         {
-            if (progressRecord.RecordType == ProgressRecordType.Completed)
-            {
-                WriteDebug($"Progress {progressRecord.ActivityId}, Activity=<{progressRecord.Activity}>, Completed");
-            }
-            else
-            {
-                WriteDebug($"Progress {progressRecord.ActivityId}, Activity=<{progressRecord.Activity}>, Status=<{progressRecord.StatusDescription}>, Operation=<{progressRecord.CurrentOperation}>, PercentComplete=<{progressRecord.PercentComplete}>, SecondsRemaining=<{progressRecord.SecondsRemaining}>");
-            }
-
+            WriteDebug(ProgressSession.GetDebugMessage(progressRecord));
             WriteProgress(progressRecord);
         }
     }
