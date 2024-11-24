@@ -15,6 +15,7 @@ namespace PSProgress
         /// </remarks>
         public static IDateTimeProvider Default { get; set; } = new DateTimeProvider();
 
+        /// <inheritdoc/>
         public DateTime GetCurrentTime()
         {
             return DateTime.Now;

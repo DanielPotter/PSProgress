@@ -7,8 +7,19 @@ namespace PSProgress
     /// </summary>
     public class ProgressContext
     {
+        /// <summary>
+        /// The default interval at which progress should be returned. The value is 0.5 seconds.
+        /// </summary>
         public static TimeSpan DefaultRefreshInterval = TimeSpan.FromSeconds(0.5);
+
+        /// <summary>
+        /// The default length of time from the first sample that progress should be returned. The value is 1 second.
+        /// </summary>
         public static TimeSpan DefaultDisplayThreshold = TimeSpan.FromSeconds(1);
+
+        /// <summary>
+        /// The default shortest length of time over which progress should be returned.
+        /// </summary>
         public static TimeSpan DefaultMinimumTimeLeftToDisplay = TimeSpan.FromSeconds(2);
 
         private readonly ProgressSampleCollection _progressSampleCollection = new ProgressSampleCollection();

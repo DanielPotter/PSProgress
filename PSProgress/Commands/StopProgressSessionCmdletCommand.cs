@@ -3,7 +3,7 @@ using System.Management.Automation;
 namespace PSProgress.Commands
 {
     [Cmdlet(VerbsLifecycle.Stop, "ProgressSession")]
-    public class StopProgressSessionCmdletCommand : PSCmdlet
+    internal class StopProgressSessionCmdletCommand : PSCmdlet
     {
         #region Parameters
 

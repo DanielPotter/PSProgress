@@ -4,7 +4,7 @@ using System.Management.Automation;
 namespace PSProgress.Commands
 {
     [Cmdlet(VerbsData.Update, "ProgressSession")]
-    public class UpdateProgressSessionCmdletCommand : PSCmdlet
+    internal class UpdateProgressSessionCmdletCommand : PSCmdlet
     {
         #region Parameters
 

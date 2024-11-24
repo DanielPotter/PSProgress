@@ -55,7 +55,7 @@ namespace PSProgress
         public ProgressContext Context { get; set; } = new ProgressContext();
 
         /// <summary>
-        /// Createa a progress record for an item that will be processed.
+        /// Create a progress record for an item that will be processed.
         /// </summary>
         /// <param name="progressInfo">The progress information.</param>
         /// <param name="item">The item to be processed.</param>
@@ -69,7 +69,7 @@ namespace PSProgress
             }
             else
             {
-                statusDescription = ScriptBlock.Create("$_ = $args[0]; " + Status.ToString()).InvokeReturnAsIs(item)?.ToString() ?? "Processing";
+                statusDescription = Status.InvokeInline(item)?.ToString() ?? "Processing";
             }
 
             var progressRecord = new ProgressRecord(activityId: ActivityId, activity: Activity, statusDescription: statusDescription);
@@ -81,7 +81,7 @@ namespace PSProgress
 
             if (CurrentOperation != null)
             {
-                string operationDescription = ScriptBlock.Create("$_ = $args[0]; " + CurrentOperation.ToString()).InvokeReturnAsIs(item)?.ToString() ?? string.Empty;
+                string operationDescription = CurrentOperation.InvokeInline(item)?.ToString() ?? string.Empty;
                 progressRecord.CurrentOperation = operationDescription;
             }
 
