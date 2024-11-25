@@ -7,7 +7,10 @@ param (
     [scriptblock] $Script,
 
     [Parameter()]
-    [string] $WorkingDirectory
+    [string] $WorkingDirectory,
+
+    [Parameter()]
+    [System.Collections.IDictionary] $Variables
 )
 
 $rootDirectory = Split-Path $PSScriptRoot
@@ -19,10 +22,27 @@ if (-not $WorkingDirectory) {
     $WorkingDirectory = $rootDirectory
 }
 
-pwsh.exe -NoProfile -WorkingDirectory $WorkingDirectory -Command @"
+$variableScriptLines = ""
+if ($Variables.Count) {
+    $variableJson = $Variables | ConvertTo-Json
+    $variableScriptLines = @(
+        '    $variablesJsonString = @"'
+        $variableJson
+        '"@'
+        '    $variables = $variablesJsonString.Trim() | ConvertFrom-Json'
+        $Variables.Keys | ForEach-Object {
+            "    `$$_ = `$variables.$_"
+        }
+    ) | Join-String -Separator "`r`n"
+}
+
+$command = @"
 &{
     Import-Module "$($modulePath.Path)" -Verbose -ErrorAction Stop
     Add-Type -Path "$($testsPath.Path)" -Verbose -ErrorAction Stop
+    $variableScriptLines
     & {$Script}
 }
 "@
+
+pwsh.exe -NoProfile -WorkingDirectory $WorkingDirectory -Command $command
