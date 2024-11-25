@@ -2,11 +2,17 @@ using System.Management.Automation;
 
 namespace PSProgress.Commands
 {
+    /// <summary>
+    /// Stops an active progress session and removes its progress bar.
+    /// </summary>
     [Cmdlet(VerbsLifecycle.Stop, "ProgressSession")]
-    internal class StopProgressSessionCmdletCommand : PSCmdlet
+    public class StopProgressSessionCmdletCommand : PSCmdlet
     {
         #region Parameters
 
+        /// <summary>
+        /// Specifies the progress session to stop.
+        /// </summary>
         [Parameter(
             Mandatory = true
         )]
@@ -14,6 +20,7 @@ namespace PSProgress.Commands
 
         #endregion
 
+        /// <inheritdoc/>
         protected override void ProcessRecord()
         {
             base.ProcessRecord();
