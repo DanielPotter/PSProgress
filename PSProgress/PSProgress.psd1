@@ -30,7 +30,7 @@ CompanyName = 'Alidantech'
 Copyright = '(c) Daniel Potter. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = ''
+Description = 'This module provides a cmdlet that simplifies the process of creating and managing progress bars in your PowerShell scripts.'
 
 # Minimum version of the PowerShell engine required by this module
 # PowerShellVersion = ''
@@ -101,7 +101,7 @@ PrivateData = @{
         # LicenseUri = ''
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/DanielPotter/PSProgress'
 
         # A URL to an icon representing this module.
         # IconUri = ''
