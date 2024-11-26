@@ -15,8 +15,8 @@ namespace PSProgress
         /// <param name="activityId">The ID that distinguishes each progress bar from the others.</param>
         public ProgressSession(string activity, int? activityId)
         {
-            Activity = activity;
-            ActivityId = activityId ?? Math.Abs(activity.GetHashCode());
+            this.Activity = activity;
+            this.ActivityId = activityId ?? Math.Abs(activity.GetHashCode());
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace PSProgress
         /// <summary>
         /// Gets the number of items that are expected to be processed.
         /// </summary>
-        public uint ExpectedItemCount => Context.ExpectedItemCount;
+        public uint ExpectedItemCount => this.Context.ExpectedItemCount;
 
         /// <summary>
         /// Gets or sets the script that creates the text that describes current state of the activity.
@@ -63,25 +63,25 @@ namespace PSProgress
         public ProgressRecord CreateProgressRecord(SampledProgressInfo progressInfo, object item)
         {
             string statusDescription;
-            if (Status is null)
+            if (this.Status is null)
             {
-                statusDescription = $"{progressInfo.ItemIndex} / {ExpectedItemCount} ({progressInfo.PercentComplete:P})";
+                statusDescription = $"{progressInfo.ItemIndex} / {this.ExpectedItemCount} ({progressInfo.PercentComplete:P})";
             }
             else
             {
-                statusDescription = Status.InvokeInline(item)?.ToString() ?? "Processing";
+                statusDescription = this.Status.InvokeInline(item)?.ToString() ?? "Processing";
             }
 
-            var progressRecord = new ProgressRecord(activityId: ActivityId, activity: Activity, statusDescription: statusDescription);
+            var progressRecord = new ProgressRecord(activityId: this.ActivityId, activity: this.Activity, statusDescription: statusDescription);
 
-            if (ParentId.HasValue)
+            if (this.ParentId.HasValue)
             {
-                progressRecord.ParentActivityId = ParentId.Value;
+                progressRecord.ParentActivityId = this.ParentId.Value;
             }
 
-            if (CurrentOperation != null)
+            if (this.CurrentOperation != null)
             {
-                string operationDescription = CurrentOperation.InvokeInline(item)?.ToString() ?? string.Empty;
+                string operationDescription = this.CurrentOperation.InvokeInline(item)?.ToString() ?? string.Empty;
                 progressRecord.CurrentOperation = operationDescription;
             }
 

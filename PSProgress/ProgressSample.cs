@@ -6,8 +6,8 @@ namespace PSProgress
     {
         public ProgressSample(uint index, DateTime timestamp)
         {
-            Index = index;
-            Timestamp = timestamp;
+            this.Index = index;
+            this.Timestamp = timestamp;
         }
 
         public uint Index { get; }

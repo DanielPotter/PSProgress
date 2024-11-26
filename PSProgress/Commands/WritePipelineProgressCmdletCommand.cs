@@ -44,11 +44,11 @@ namespace PSProgress.Commands
     {
         #region Fields
 
-        private ProgressSession _progressSession;
+        private ProgressSession progressSession;
 
-        private readonly List<object> _allItems = new List<object>();
+        private readonly List<object> allItems = new List<object>();
 
-        private bool _autoCountItems;
+        private bool autoCountItems;
 
         #endregion
 
@@ -128,40 +128,40 @@ namespace PSProgress.Commands
         {
             base.BeginProcessing();
 
-            _progressSession = new ProgressSession(Activity, MyInvocation.BoundParameters.ContainsKey(nameof(Id)) ? (int?)Id : null);
+            this.progressSession = new ProgressSession(this.Activity, this.MyInvocation.BoundParameters.ContainsKey(nameof(this.Id)) ? (int?)this.Id : null);
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(Status)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.Status)))
             {
-                _progressSession.Status = Status;
+                this.progressSession.Status = this.Status;
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(CurrentOperation)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.CurrentOperation)))
             {
-                _progressSession.CurrentOperation = CurrentOperation;
+                this.progressSession.CurrentOperation = this.CurrentOperation;
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(RefreshInterval)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.RefreshInterval)))
             {
-                _progressSession.Context.RefreshInterval = RefreshInterval;
+                this.progressSession.Context.RefreshInterval = this.RefreshInterval;
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(DisplayThreshold)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.DisplayThreshold)))
             {
-                _progressSession.Context.DisplayThreshold = DisplayThreshold;
+                this.progressSession.Context.DisplayThreshold = this.DisplayThreshold;
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(MinimumTimeLeftToDisplay)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.MinimumTimeLeftToDisplay)))
             {
-                _progressSession.Context.MinimumTimeLeftToDisplay = MinimumTimeLeftToDisplay;
+                this.progressSession.Context.MinimumTimeLeftToDisplay = this.MinimumTimeLeftToDisplay;
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(ExpectedCount)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.ExpectedCount)))
             {
-                _progressSession.Context.ExpectedItemCount = (uint)ExpectedCount;
+                this.progressSession.Context.ExpectedItemCount = (uint)this.ExpectedCount;
             }
             else
             {
-                _autoCountItems = true;
+                this.autoCountItems = true;
             }
         }
 
@@ -170,26 +170,26 @@ namespace PSProgress.Commands
         {
             base.ProcessRecord();
 
-            if (_autoCountItems)
+            if (this.autoCountItems)
             {
-                if (InputObject.Length > 0)
+                if (this.InputObject.Length > 0)
                 {
-                    WriteProgress(new ProgressRecord(
-                        activityId: _progressSession.ActivityId,
-                        activity: _progressSession.Activity,
-                        statusDescription: _progressSession.Status?.InvokeInline(InputObject[0])?.ToString() ?? "Collecting")
+                    this.WriteProgress(new ProgressRecord(
+                        activityId: this.progressSession.ActivityId,
+                        activity: this.progressSession.Activity,
+                        statusDescription: this.progressSession.Status?.InvokeInline(this.InputObject[0])?.ToString() ?? "Collecting")
                     {
                         CurrentOperation = "Collecting",
                     });
                 }
 
-                _allItems.AddRange(InputObject);
+                this.allItems.AddRange(this.InputObject);
                 return;
             }
 
-            foreach (var item in InputObject)
+            foreach (var item in this.InputObject)
             {
-                HandleItem(item);
+                this.HandleItem(item);
             }
         }
 
@@ -198,23 +198,23 @@ namespace PSProgress.Commands
         {
             base.EndProcessing();
 
-            if (_autoCountItems)
+            if (this.autoCountItems)
             {
-                _progressSession.Context.ExpectedItemCount = (uint)_allItems.Count;
-                if (_allItems.Count == 0)
+                this.progressSession.Context.ExpectedItemCount = (uint)this.allItems.Count;
+                if (this.allItems.Count == 0)
                 {
                     return;
                 }
 
-                foreach (var item in _allItems)
+                foreach (var item in this.allItems)
                 {
-                    HandleItem(item);
+                    this.HandleItem(item);
                 }
             }
 
-            WriteProgressInternal(new ProgressRecord(
-                activityId: _progressSession.ActivityId,
-                activity: _progressSession.Activity,
+            this.WriteProgressInternal(new ProgressRecord(
+                activityId: this.progressSession.ActivityId,
+                activity: this.progressSession.Activity,
                 statusDescription: "Complete")
             {
                 RecordType = ProgressRecordType.Completed,
@@ -225,20 +225,20 @@ namespace PSProgress.Commands
 
         private void HandleItem(object item)
         {
-            var progressInfo = _progressSession.Context.AddSample();
+            var progressInfo = this.progressSession.Context.AddSample();
             if (progressInfo != null)
             {
-                var progressRecord = _progressSession.CreateProgressRecord(progressInfo, item);
-                WriteProgressInternal(progressRecord);
+                var progressRecord = this.progressSession.CreateProgressRecord(progressInfo, item);
+                this.WriteProgressInternal(progressRecord);
             }
 
-            WriteObject(item);
+            this.WriteObject(item);
         }
 
         private void WriteProgressInternal(ProgressRecord progressRecord)
         {
-            WriteDebug(ProgressSession.GetDebugMessage(progressRecord));
-            WriteProgress(progressRecord);
+            this.WriteDebug(ProgressSession.GetDebugMessage(progressRecord));
+            this.WriteProgress(progressRecord);
         }
     }
 }

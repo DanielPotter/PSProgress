@@ -6,7 +6,7 @@ namespace PSProgress.Tests
 
         public DateTime GetCurrentTime()
         {
-            return CurrentTime;
+            return this.CurrentTime;
         }
     }
 }

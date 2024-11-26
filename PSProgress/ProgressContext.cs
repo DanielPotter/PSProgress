@@ -22,10 +22,10 @@ namespace PSProgress
         /// </summary>
         public static TimeSpan DefaultMinimumTimeLeftToDisplay = TimeSpan.FromSeconds(2);
 
-        private readonly ProgressSampleCollection _progressSampleCollection = new ProgressSampleCollection();
+        private readonly ProgressSampleCollection progressSampleCollection = new ProgressSampleCollection();
 
-        private DateTime? _startTime;
-        private DateTime? _lastProgressDisplayTime;
+        private DateTime? startTime;
+        private DateTime? lastProgressDisplayTime;
 
         /// <summary>
         /// Gets the total number of samples that have been added.
@@ -63,32 +63,32 @@ namespace PSProgress
         /// <returns>An object containing progress information if progress should be displayed; otherwise, <see langword="null"/>.</returns>
         public SampledProgressInfo AddSample()
         {
-            var now = TimeProvider.GetCurrentTime();
-            if (ProcessedItemCount == 0)
+            DateTime now = this.TimeProvider.GetCurrentTime();
+            if (this.ProcessedItemCount == 0)
             {
-                _startTime = now;
+                this.startTime = now;
             }
 
             bool writeProgress = true;
-            if (RefreshInterval.Ticks > 0 && _lastProgressDisplayTime.HasValue && now - _lastProgressDisplayTime < RefreshInterval)
+            if (this.RefreshInterval.Ticks > 0 && this.lastProgressDisplayTime.HasValue && now - this.lastProgressDisplayTime < this.RefreshInterval)
             {
                 writeProgress = false;
             }
 
-            if (writeProgress && !_lastProgressDisplayTime.HasValue && DisplayThreshold.Ticks > 0)
+            if (writeProgress && !this.lastProgressDisplayTime.HasValue && this.DisplayThreshold.Ticks > 0)
             {
-                if (now - _startTime < DisplayThreshold)
+                if (now - this.startTime < this.DisplayThreshold)
                 {
                     writeProgress = false;
                 }
 
-                if (MinimumTimeLeftToDisplay.Ticks > 0)
+                if (this.MinimumTimeLeftToDisplay.Ticks > 0)
                 {
-                    uint remainingItems = ExpectedItemCount - ProcessedItemCount;
-                    if (_progressSampleCollection.AverageInterval.HasValue && remainingItems > 0)
+                    uint remainingItems = this.ExpectedItemCount - this.ProcessedItemCount;
+                    if (this.progressSampleCollection.AverageInterval.HasValue && remainingItems > 0)
                     {
-                        TimeSpan timeRemaining = TimeSpan.FromTicks(_progressSampleCollection.AverageInterval.Value.Ticks * remainingItems);
-                        if (timeRemaining < MinimumTimeLeftToDisplay)
+                        var timeRemaining = TimeSpan.FromTicks(this.progressSampleCollection.AverageInterval.Value.Ticks * remainingItems);
+                        if (timeRemaining < this.MinimumTimeLeftToDisplay)
                         {
                             writeProgress = false;
                         }
@@ -99,24 +99,24 @@ namespace PSProgress
             SampledProgressInfo sampledProgressInfo = null;
             if (writeProgress)
             {
-                _progressSampleCollection.Add(new ProgressSample(ProcessedItemCount, now));
-                _lastProgressDisplayTime = now;
+                this.progressSampleCollection.Add(new ProgressSample(this.ProcessedItemCount, now));
+                this.lastProgressDisplayTime = now;
 
-                uint remainingItems = ExpectedItemCount - ProcessedItemCount;
-                double percentComplete = (double)ProcessedItemCount / ExpectedItemCount;
+                uint remainingItems = this.ExpectedItemCount - this.ProcessedItemCount;
+                double percentComplete = (double)this.ProcessedItemCount / this.ExpectedItemCount;
                 TimeSpan? timeRemaining = null;
-                if (_progressSampleCollection.AverageInterval.HasValue && remainingItems > 0)
+                if (this.progressSampleCollection.AverageInterval.HasValue && remainingItems > 0)
                 {
-                    timeRemaining = TimeSpan.FromTicks(_progressSampleCollection.AverageInterval.Value.Ticks * remainingItems);
+                    timeRemaining = TimeSpan.FromTicks(this.progressSampleCollection.AverageInterval.Value.Ticks * remainingItems);
                 }
                 sampledProgressInfo = new SampledProgressInfo(
-                    itemIndex: ProcessedItemCount,
+                    itemIndex: this.ProcessedItemCount,
                     remainingItemCount: remainingItems,
                     percentComplete: percentComplete,
                     estimatedTimeRemaining: timeRemaining);
             }
 
-            ProcessedItemCount++;
+            this.ProcessedItemCount++;
             return sampledProgressInfo;
         }
     }

@@ -16,10 +16,10 @@ namespace PSProgress
         /// <param name="estimatedTimeRemaining">A time span that represents the estimated time remaining until all items have been processed, if available.</param>
         public SampledProgressInfo(uint itemIndex, uint remainingItemCount, double percentComplete, TimeSpan? estimatedTimeRemaining)
         {
-            ItemIndex = itemIndex;
-            RemainingItemCount = remainingItemCount;
-            PercentComplete = percentComplete;
-            EstimatedTimeRemaining = estimatedTimeRemaining;
+            this.ItemIndex = itemIndex;
+            this.RemainingItemCount = remainingItemCount;
+            this.PercentComplete = percentComplete;
+            this.EstimatedTimeRemaining = estimatedTimeRemaining;
         }
 
         /// <summary>
