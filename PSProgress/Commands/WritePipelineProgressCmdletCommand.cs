@@ -44,9 +44,9 @@ namespace PSProgress.Commands
     {
         #region Fields
 
-        private ProgressSession progressSession;
+        private ProgressSession? progressSession;
 
-        private readonly List<object> allItems = new List<object>();
+        private readonly List<object> allItems = [];
 
         private bool autoCountItems;
 
@@ -60,7 +60,7 @@ namespace PSProgress.Commands
         [Parameter(
             ValueFromPipeline = true
         )]
-        public object[] InputObject { get; set; }
+        public object[] InputObject { get; set; } = [];
 
         /// <summary>
         /// Specifies the first line of text in the heading above the status bar. This text describes the activity whose progress is being reported.
@@ -69,7 +69,7 @@ namespace PSProgress.Commands
             Mandatory = true,
             Position = 0
         )]
-        public string Activity { get; set; }
+        public string Activity { get; set; } = string.Empty;
 
         /// <summary>
         /// Specifies the number of items that are expected to be processed. Using this parameter will improve the speed and reduce the overhead of this command.
@@ -93,13 +93,13 @@ namespace PSProgress.Commands
         /// Specifies a script block expression that gets text that describes the current state of the activity, given the object being processed.
         /// </summary>
         [Parameter()]
-        public ScriptBlock Status { get; set; }
+        public ScriptBlock? Status { get; set; }
 
         /// <summary>
         /// Specifies a script block expression that gets text that describes the operation that's currently taking place. This parameter has no effect when the progress view is set to <c>Minimal</c>.
         /// </summary>
         [Parameter()]
-        public ScriptBlock CurrentOperation { get; set; }
+        public ScriptBlock? CurrentOperation { get; set; }
 
         /// <summary>
         /// Specifies the interval at which progress should be returned.
@@ -128,7 +128,7 @@ namespace PSProgress.Commands
         {
             base.BeginProcessing();
 
-            this.progressSession = new ProgressSession(this.Activity, this.MyInvocation.BoundParameters.ContainsKey(nameof(this.Id)) ? (int?)this.Id : null);
+            this.progressSession = new ProgressSession(this.Activity, this.MyInvocation.BoundParameters.ContainsKey(nameof(this.Id)) ? this.Id : null);
 
             if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.Status)))
             {
@@ -170,6 +170,12 @@ namespace PSProgress.Commands
         {
             base.ProcessRecord();
 
+            if (this.progressSession is null)
+            {
+                // This should never happen because BeginProcessing is always called before ProcessRecord.
+                throw new InvalidOperationException($"Field {nameof(this.progressSession)} is null in {nameof(this.ProcessRecord)}");
+            }
+
             if (this.autoCountItems)
             {
                 if (this.InputObject.Length > 0)
@@ -189,7 +195,7 @@ namespace PSProgress.Commands
 
             foreach (var item in this.InputObject)
             {
-                this.HandleItem(item);
+                this.HandleItem(item, this.progressSession);
             }
         }
 
@@ -197,6 +203,12 @@ namespace PSProgress.Commands
         protected override void EndProcessing()
         {
             base.EndProcessing();
+
+            if (this.progressSession is null)
+            {
+                // This should never happen because BeginProcessing is always called before EndProcessing.
+                throw new InvalidOperationException($"Field {nameof(this.progressSession)} is null in {nameof(this.EndProcessing)}");
+            }
 
             if (this.autoCountItems)
             {
@@ -208,7 +220,7 @@ namespace PSProgress.Commands
 
                 foreach (var item in this.allItems)
                 {
-                    this.HandleItem(item);
+                    this.HandleItem(item, this.progressSession);
                 }
             }
 
@@ -223,12 +235,12 @@ namespace PSProgress.Commands
 
         #endregion
 
-        private void HandleItem(object item)
+        private void HandleItem(object item, ProgressSession progressSession)
         {
-            var progressInfo = this.progressSession.Context.AddSample();
-            if (progressInfo != null)
+            var progressInfo = progressSession.Context.AddSample();
+            if (progressInfo is not null)
             {
-                var progressRecord = this.progressSession.CreateProgressRecord(progressInfo, item);
+                var progressRecord = progressSession.CreateProgressRecord(progressInfo, item);
                 this.WriteProgressInternal(progressRecord);
             }
 

@@ -6,28 +6,19 @@ namespace PSProgress
     /// <summary>
     /// A session for tracking progress.
     /// </summary>
-    public class ProgressSession
+    /// <param name="activity">The text that describes the activity whose progress is being reported.</param>
+    /// <param name="activityId">The ID that distinguishes each progress bar from the others.</param>
+    public class ProgressSession(string activity, int? activityId)
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ProgressSession"/> class.
-        /// </summary>
-        /// <param name="activity">The text that describes the activity whose progress is being reported.</param>
-        /// <param name="activityId">The ID that distinguishes each progress bar from the others.</param>
-        public ProgressSession(string activity, int? activityId)
-        {
-            this.Activity = activity;
-            this.ActivityId = activityId ?? Math.Abs(activity.GetHashCode());
-        }
-
         /// <summary>
         /// Gets the text that describes the activity whose progress is being reported.
         /// </summary>
-        public string Activity { get; }
+        public string Activity { get; } = activity;
 
         /// <summary>
         /// Gets the ID that distinguishes each progress bar from the others.
         /// </summary>
-        public int ActivityId { get; }
+        public int ActivityId { get; } = activityId ?? Math.Abs(activity.GetHashCode());
 
         /// <summary>
         /// Gets or sets the parent activity of the current activity.
@@ -42,24 +33,24 @@ namespace PSProgress
         /// <summary>
         /// Gets or sets the script that creates the text that describes current state of the activity.
         /// </summary>
-        public ScriptBlock Status { get; set; }
+        public ScriptBlock? Status { get; set; }
 
         /// <summary>
         /// Gets or sets the script block that creates the text that describes the operation that's currently taking place.
         /// </summary>
-        public ScriptBlock CurrentOperation { get; set; }
+        public ScriptBlock? CurrentOperation { get; set; }
 
         /// <summary>
         /// Gets or sets the object that tracks the progress for the session.
         /// </summary>
-        public ProgressContext Context { get; set; } = new ProgressContext();
+        public ProgressContext Context { get; set; } = new();
 
         /// <summary>
         /// Create a progress record for an item that will be processed.
         /// </summary>
         /// <param name="progressInfo">The progress information.</param>
         /// <param name="item">The item to be processed.</param>
-        /// <returns></returns>
+        /// <returns>A new <see cref="ProgressRecord"/> instance that represents the <paramref name="progressInfo"/>.</returns>
         public ProgressRecord CreateProgressRecord(SampledProgressInfo progressInfo, object item)
         {
             string statusDescription;
@@ -79,7 +70,7 @@ namespace PSProgress
                 progressRecord.ParentActivityId = this.ParentId.Value;
             }
 
-            if (this.CurrentOperation != null)
+            if (this.CurrentOperation is not null)
             {
                 string operationDescription = this.CurrentOperation.InvokeInline(item)?.ToString() ?? string.Empty;
                 progressRecord.CurrentOperation = operationDescription;

@@ -6,7 +6,7 @@ namespace PSProgress
 {
     internal class ProgressSampleCollection
     {
-        private readonly Queue<ProgressSample> sampleQueue = new Queue<ProgressSample>();
+        private readonly Queue<ProgressSample> sampleQueue = new();
 
         private uint indexDeltaSum;
         private TimeSpan indexIntervalSum;

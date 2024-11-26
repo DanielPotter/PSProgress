@@ -10,19 +10,19 @@ namespace PSProgress
         /// <summary>
         /// The default interval at which progress should be returned. The value is 0.5 seconds.
         /// </summary>
-        public static TimeSpan DefaultRefreshInterval = TimeSpan.FromSeconds(0.5);
+        public static TimeSpan DefaultRefreshInterval { get; } = TimeSpan.FromSeconds(0.5);
 
         /// <summary>
         /// The default length of time from the first sample that progress should be returned. The value is 1 second.
         /// </summary>
-        public static TimeSpan DefaultDisplayThreshold = TimeSpan.FromSeconds(1);
+        public static TimeSpan DefaultDisplayThreshold { get; } = TimeSpan.FromSeconds(1);
 
         /// <summary>
         /// The default shortest length of time over which progress should be returned.
         /// </summary>
-        public static TimeSpan DefaultMinimumTimeLeftToDisplay = TimeSpan.FromSeconds(2);
+        public static TimeSpan DefaultMinimumTimeLeftToDisplay { get; } = TimeSpan.FromSeconds(2);
 
-        private readonly ProgressSampleCollection progressSampleCollection = new ProgressSampleCollection();
+        private readonly ProgressSampleCollection progressSampleCollection = new();
 
         private DateTime? startTime;
         private DateTime? lastProgressDisplayTime;
@@ -61,7 +61,7 @@ namespace PSProgress
         /// Samples the current time to determine whether progress should be displayed.
         /// </summary>
         /// <returns>An object containing progress information if progress should be displayed; otherwise, <see langword="null"/>.</returns>
-        public SampledProgressInfo AddSample()
+        public SampledProgressInfo? AddSample()
         {
             DateTime now = this.TimeProvider.GetCurrentTime();
             if (this.ProcessedItemCount == 0)
@@ -96,7 +96,7 @@ namespace PSProgress
                 }
             }
 
-            SampledProgressInfo sampledProgressInfo = null;
+            SampledProgressInfo? sampledProgressInfo = null;
             if (writeProgress)
             {
                 this.progressSampleCollection.Add(new ProgressSample(this.ProcessedItemCount, now));
@@ -110,10 +110,10 @@ namespace PSProgress
                     timeRemaining = TimeSpan.FromTicks(this.progressSampleCollection.AverageInterval.Value.Ticks * remainingItems);
                 }
                 sampledProgressInfo = new SampledProgressInfo(
-                    itemIndex: this.ProcessedItemCount,
-                    remainingItemCount: remainingItems,
-                    percentComplete: percentComplete,
-                    estimatedTimeRemaining: timeRemaining);
+                    ItemIndex: this.ProcessedItemCount,
+                    RemainingItemCount: remainingItems,
+                    PercentComplete: percentComplete,
+                    EstimatedTimeRemaining: timeRemaining);
             }
 
             this.ProcessedItemCount++;
