@@ -2,16 +2,10 @@ using System;
 
 namespace PSProgress
 {
-    internal readonly struct ProgressSample
+    internal readonly struct ProgressSample(uint index, DateTime timestamp)
     {
-        public ProgressSample(uint index, DateTime timestamp)
-        {
-            Index = index;
-            Timestamp = timestamp;
-        }
+        public uint Index { get; } = index;
 
-        public uint Index { get; }
-
-        public DateTime Timestamp { get; }
+        public DateTime Timestamp { get; } = timestamp;
     }
 }

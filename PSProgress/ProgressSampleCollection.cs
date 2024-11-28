@@ -6,40 +6,40 @@ namespace PSProgress
 {
     internal class ProgressSampleCollection
     {
-        private readonly Queue<ProgressSample> _sampleQueue = new Queue<ProgressSample>();
+        private readonly Queue<ProgressSample> sampleQueue = new();
 
-        private uint _indexDeltaSum;
-        private TimeSpan _indexIntervalSum;
+        private uint indexDeltaSum;
+        private TimeSpan indexIntervalSum;
 
         public int Capacity { get; } = 20;
 
-        public int Count => _sampleQueue.Count;
+        public int Count => this.sampleQueue.Count;
 
         public TimeSpan? AverageInterval { get; private set; }
 
         public void Add(ProgressSample sample)
         {
-            _sampleQueue.Enqueue(sample);
+            this.sampleQueue.Enqueue(sample);
 
-            while (_sampleQueue.Count >= Capacity)
+            while (this.sampleQueue.Count >= this.Capacity)
             {
-                ProgressSample firstSample = _sampleQueue.First();
-                ProgressSample secondSample = _sampleQueue.ElementAt(1);
-                _indexDeltaSum -= secondSample.Index - firstSample.Index;
-                _indexIntervalSum -= secondSample.Timestamp - firstSample.Timestamp;
-                _sampleQueue.Dequeue();
+                ProgressSample firstSample = this.sampleQueue.First();
+                ProgressSample secondSample = this.sampleQueue.ElementAt(1);
+                this.indexDeltaSum -= secondSample.Index - firstSample.Index;
+                this.indexIntervalSum -= secondSample.Timestamp - firstSample.Timestamp;
+                this.sampleQueue.Dequeue();
             }
 
-            if (_sampleQueue.Count > 1)
+            if (this.sampleQueue.Count > 1)
             {
-                ProgressSample lastSample = _sampleQueue.Last();
-                ProgressSample secondToLastSample = _sampleQueue.ElementAt(_sampleQueue.Count - 2);
-                _indexDeltaSum += lastSample.Index - secondToLastSample.Index;
-                _indexIntervalSum += lastSample.Timestamp - secondToLastSample.Timestamp;
+                ProgressSample lastSample = this.sampleQueue.Last();
+                ProgressSample secondToLastSample = this.sampleQueue.ElementAt(this.sampleQueue.Count - 2);
+                this.indexDeltaSum += lastSample.Index - secondToLastSample.Index;
+                this.indexIntervalSum += lastSample.Timestamp - secondToLastSample.Timestamp;
 
-                long averageIndexDelta = _indexDeltaSum / (Count - 1);
-                TimeSpan averageIndexInterval = TimeSpan.FromMilliseconds(_indexIntervalSum.TotalMilliseconds / (Count - 1));
-                AverageInterval = TimeSpan.FromMilliseconds(averageIndexInterval.TotalMilliseconds / averageIndexDelta);
+                long averageIndexDelta = this.indexDeltaSum / (this.Count - 1);
+                var averageIndexInterval = TimeSpan.FromMilliseconds(this.indexIntervalSum.TotalMilliseconds / (this.Count - 1));
+                this.AverageInterval = TimeSpan.FromMilliseconds(averageIndexInterval.TotalMilliseconds / averageIndexDelta);
             }
         }
     }
