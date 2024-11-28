@@ -6,19 +6,31 @@ namespace PSProgress
     /// <summary>
     /// A session for tracking progress.
     /// </summary>
-    /// <param name="activity">The text that describes the activity whose progress is being reported.</param>
-    /// <param name="activityId">The ID that distinguishes each progress bar from the others.</param>
-    public class ProgressSession(string activity, int? activityId)
+    public class ProgressSession
     {
+        private readonly long sessionSourceId;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProgressSession"/> class.
+        /// </summary>
+        /// <param name="activity">The text that describes the activity whose progress is being reported.</param>
+        /// <param name="activityId">The ID that distinguishes each progress bar from the others.</param>
+        public ProgressSession(string activity, int? activityId)
+        {
+            this.Activity = activity;
+            this.ActivityId = activityId ?? Math.Abs(activity.GetHashCode());
+            this.sessionSourceId = HashCode.Combine(nameof(ProgressSession), this.ActivityId);
+        }
+
         /// <summary>
         /// Gets the text that describes the activity whose progress is being reported.
         /// </summary>
-        public string Activity { get; } = activity;
+        public string Activity { get; }
 
         /// <summary>
         /// Gets the ID that distinguishes each progress bar from the others.
         /// </summary>
-        public int ActivityId { get; } = activityId ?? Math.Abs(activity.GetHashCode());
+        public int ActivityId { get; }
 
         /// <summary>
         /// Gets or sets the parent activity of the current activity.
@@ -44,6 +56,52 @@ namespace PSProgress
         /// Gets or sets the object that tracks the progress for the session.
         /// </summary>
         public ProgressContext Context { get; set; } = new();
+
+        /// <summary>
+        /// Creates or updates a progress bar using the specified item to provide status information.
+        /// </summary>
+        /// <param name="item">The item to be processed.</param>
+        /// <param name="commandRuntime">The command runtime to use.</param>
+        /// <returns><see langword="true"/> if progress was updated; otherwise, <see langword="false"/>.</returns>
+        public bool WriteProgressForItem(object item, ICommandRuntime commandRuntime)
+        {
+            var progressInfo = this.Context.AddSample();
+            if (progressInfo is not null)
+            {
+                var progressRecord = this.CreateProgressRecord(progressInfo, item);
+                this.WriteProgress(progressRecord, commandRuntime);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Completes the progress bar.
+        /// </summary>
+        /// <param name="commandRuntime">The command runtime to use.</param>
+        public void Complete(ICommandRuntime commandRuntime)
+        {
+            var progressCompleteRecord = new ProgressRecord(activityId: this.ActivityId, activity: this.Activity, statusDescription: "Complete")
+            {
+                RecordType = ProgressRecordType.Completed,
+            };
+
+            this.WriteProgress(progressCompleteRecord, commandRuntime);
+        }
+
+        /// <summary>
+        /// Writes or updates progress.
+        /// </summary>
+        /// <param name="progressRecord">The progress record to write.</param>
+        /// <param name="commandRuntime">The command runtime to use.</param>
+        public void WriteProgress(ProgressRecord progressRecord, ICommandRuntime commandRuntime)
+        {
+            commandRuntime.WriteDebug(GetDebugMessage(progressRecord));
+
+            // Write progress with a common source ID so that we don't create multiple progress bars.
+            commandRuntime.WriteProgress(sourceId: this.sessionSourceId, progressRecord);
+        }
 
         /// <summary>
         /// Create a progress record for an item that will be processed.

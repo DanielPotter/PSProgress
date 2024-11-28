@@ -121,7 +121,7 @@ namespace PSProgress.Commands
 
         #endregion
 
-        #region Overrides
+        #region Processing Blocks
 
         /// <inheritdoc/>
         protected override void BeginProcessing()
@@ -195,7 +195,8 @@ namespace PSProgress.Commands
 
             foreach (var item in this.InputObject)
             {
-                this.HandleItem(item, this.progressSession);
+                this.progressSession.WriteProgressForItem(item, this.CommandRuntime);
+                this.WriteObject(item);
             }
         }
 
@@ -220,37 +221,14 @@ namespace PSProgress.Commands
 
                 foreach (var item in this.allItems)
                 {
-                    this.HandleItem(item, this.progressSession);
+                    this.progressSession.WriteProgressForItem(item, this.CommandRuntime);
+                    this.WriteObject(item);
                 }
             }
 
-            this.WriteProgressInternal(new ProgressRecord(
-                activityId: this.progressSession.ActivityId,
-                activity: this.progressSession.Activity,
-                statusDescription: "Complete")
-            {
-                RecordType = ProgressRecordType.Completed,
-            });
+            this.progressSession.Complete(this.CommandRuntime);
         }
 
         #endregion
-
-        private void HandleItem(object item, ProgressSession progressSession)
-        {
-            var progressInfo = progressSession.Context.AddSample();
-            if (progressInfo is not null)
-            {
-                var progressRecord = progressSession.CreateProgressRecord(progressInfo, item);
-                this.WriteProgressInternal(progressRecord);
-            }
-
-            this.WriteObject(item);
-        }
-
-        private void WriteProgressInternal(ProgressRecord progressRecord)
-        {
-            this.WriteDebug(ProgressSession.GetDebugMessage(progressRecord));
-            this.WriteProgress(progressRecord);
-        }
     }
 }

@@ -73,7 +73,7 @@ namespace PSProgress.Commands
 
         #endregion
 
-        #region Overrides
+        #region Processing Blocks
 
         /// <inheritdoc/>
         protected override void ProcessRecord()

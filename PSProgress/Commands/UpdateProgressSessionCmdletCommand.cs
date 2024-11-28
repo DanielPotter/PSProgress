@@ -73,6 +73,8 @@ namespace PSProgress.Commands
 
         #endregion
 
+        #region Processing Blocks
+
         /// <inheritdoc/>
         protected override void BeginProcessing()
         {
@@ -133,19 +135,15 @@ namespace PSProgress.Commands
 
             foreach (var item in this.InputObject)
             {
+                this.Session.WriteProgressForItem(item, this.CommandRuntime);
+
                 if (this.PassThru)
                 {
                     this.WriteObject(item);
                 }
-
-                var progressInfo = this.Session.Context.AddSample();
-                if (progressInfo is not null)
-                {
-                    var progressRecord = this.Session.CreateProgressRecord(progressInfo, item);
-                    this.WriteDebug(ProgressSession.GetDebugMessage(progressRecord));
-                    this.WriteProgress(progressRecord);
-                }
             }
         }
+
+        #endregion
     }
 }

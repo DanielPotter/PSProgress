@@ -21,6 +21,8 @@ namespace PSProgress.Commands
 
         #endregion
 
+        #region Processing Blocks
+
         /// <inheritdoc/>
         protected override void ProcessRecord()
         {
@@ -32,13 +34,9 @@ namespace PSProgress.Commands
                 throw new PSInvalidOperationException($"Property {nameof(this.Session)} is null in {nameof(this.ProcessRecord)}");
             }
 
-            var progressCompleteRecord = new ProgressRecord(activityId: this.Session.ActivityId, activity: this.Session.Activity, statusDescription: "Complete")
-            {
-                RecordType = ProgressRecordType.Completed,
-            };
-
-            this.WriteDebug(ProgressSession.GetDebugMessage(progressCompleteRecord));
-            this.WriteProgress(progressCompleteRecord);
+            this.Session.Complete(this.CommandRuntime);
         }
+
+        #endregion
     }
 }
