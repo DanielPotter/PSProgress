@@ -16,7 +16,8 @@ namespace PSProgress.Commands
         [Parameter(
             Mandatory = true
         )]
-        public ProgressSession Session { get; set; }
+        [ValidateNotNull]
+        public ProgressSession? Session { get; set; }
 
         #endregion
 
@@ -25,13 +26,19 @@ namespace PSProgress.Commands
         {
             base.ProcessRecord();
 
-            var progressCompleteRecord = new ProgressRecord(activityId: Session.ActivityId, activity: Session.Activity, statusDescription: "Complete")
+            if (this.Session is null)
+            {
+                // This should never happen because PowerShell will validate that Session is not null.
+                throw new PSInvalidOperationException($"Property {nameof(this.Session)} is null in {nameof(this.ProcessRecord)}");
+            }
+
+            var progressCompleteRecord = new ProgressRecord(activityId: this.Session.ActivityId, activity: this.Session.Activity, statusDescription: "Complete")
             {
                 RecordType = ProgressRecordType.Completed,
             };
 
-            WriteDebug(ProgressSession.GetDebugMessage(progressCompleteRecord));
-            WriteProgress(progressCompleteRecord);
+            this.WriteDebug(ProgressSession.GetDebugMessage(progressCompleteRecord));
+            this.WriteProgress(progressCompleteRecord);
         }
     }
 }

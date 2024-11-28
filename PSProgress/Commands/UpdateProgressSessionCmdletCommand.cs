@@ -18,7 +18,7 @@ namespace PSProgress.Commands
         [Parameter(
             ValueFromPipeline = true
         )]
-        public object[] InputObject { get; set; }
+        public object[]? InputObject { get; set; }
 
         /// <summary>
         /// Specifies the progress session to update.
@@ -26,7 +26,8 @@ namespace PSProgress.Commands
         [Parameter(
             Mandatory = true
         )]
-        public ProgressSession Session { get; set; }
+        [ValidateNotNull]
+        public ProgressSession? Session { get; set; }
 
         /// <summary>
         /// Specifies the number of items that are expected to be processed. Using this parameter will improve the speed and reduce the overhead of this command.
@@ -38,13 +39,13 @@ namespace PSProgress.Commands
         /// Specifies a script block expression that gets text that describes the current state of the activity, given the object being processed.
         /// </summary>
         [Parameter()]
-        public ScriptBlock Status { get; set; }
+        public ScriptBlock? Status { get; set; }
 
         /// <summary>
         /// Specifies a script block expression that gets text that describes the operation that's currently taking place. This parameter has no effect when the progress view is set to <c>Minimal</c>.
         /// </summary>
         [Parameter()]
-        public ScriptBlock CurrentOperation { get; set; }
+        public ScriptBlock? CurrentOperation { get; set; }
 
         /// <summary>
         /// Specifies the interval at which progress should be returned.
@@ -77,34 +78,40 @@ namespace PSProgress.Commands
         {
             base.BeginProcessing();
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(Status)))
+            if (this.Session is null)
             {
-                Session.Status = Status;
+                // This should never happen because PowerShell will validate that Session is not null.
+                throw new PSInvalidOperationException($"Property {nameof(this.Session)} is null in {nameof(this.BeginProcessing)}");
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(CurrentOperation)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.Status)))
             {
-                Session.CurrentOperation = CurrentOperation;
+                this.Session.Status = this.Status;
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(ExpectedCount)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.CurrentOperation)))
             {
-                Session.Context.ExpectedItemCount = ExpectedCount;
+                this.Session.CurrentOperation = this.CurrentOperation;
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(RefreshInterval)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.ExpectedCount)))
             {
-                Session.Context.RefreshInterval = RefreshInterval;
+                this.Session.Context.ExpectedItemCount = this.ExpectedCount;
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(DisplayThreshold)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.RefreshInterval)))
             {
-                Session.Context.DisplayThreshold = DisplayThreshold;
+                this.Session.Context.RefreshInterval = this.RefreshInterval;
             }
 
-            if (MyInvocation.BoundParameters.ContainsKey(nameof(MinimumTimeLeftToDisplay)))
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.DisplayThreshold)))
             {
-                Session.Context.MinimumTimeLeftToDisplay = MinimumTimeLeftToDisplay;
+                this.Session.Context.DisplayThreshold = this.DisplayThreshold;
+            }
+
+            if (this.MyInvocation.BoundParameters.ContainsKey(nameof(this.MinimumTimeLeftToDisplay)))
+            {
+                this.Session.Context.MinimumTimeLeftToDisplay = this.MinimumTimeLeftToDisplay;
             }
         }
 
@@ -113,24 +120,30 @@ namespace PSProgress.Commands
         {
             base.ProcessRecord();
 
-            if (InputObject is null)
+            if (this.Session is null)
+            {
+                // This should never happen because PowerShell will validate that Session is not null.
+                throw new PSInvalidOperationException($"Property {nameof(this.Session)} is null in {nameof(this.ProcessRecord)}");
+            }
+
+            if (this.InputObject is null)
             {
                 return;
             }
 
-            foreach (var item in InputObject)
+            foreach (var item in this.InputObject)
             {
-                if (PassThru)
+                if (this.PassThru)
                 {
-                    WriteObject(item);
+                    this.WriteObject(item);
                 }
 
-                var progressInfo = Session.Context.AddSample();
-                if (progressInfo != null)
+                var progressInfo = this.Session.Context.AddSample();
+                if (progressInfo is not null)
                 {
-                    var progressRecord = Session.CreateProgressRecord(progressInfo, item);
-                    WriteDebug(ProgressSession.GetDebugMessage(progressRecord));
-                    WriteProgress(progressRecord);
+                    var progressRecord = this.Session.CreateProgressRecord(progressInfo, item);
+                    this.WriteDebug(ProgressSession.GetDebugMessage(progressRecord));
+                    this.WriteProgress(progressRecord);
                 }
             }
         }

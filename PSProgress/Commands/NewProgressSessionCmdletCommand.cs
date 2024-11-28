@@ -19,7 +19,7 @@ namespace PSProgress.Commands
             Mandatory = true,
             Position = 0
         )]
-        public string Activity { get; set; }
+        public string Activity { get; set; } = string.Empty;
 
         /// <summary>
         /// Specifies the number of items that are expected to be processed. Using this parameter will improve the speed and reduce the overhead of this command.
@@ -45,13 +45,13 @@ namespace PSProgress.Commands
         /// Specifies a script block expression that gets text that describes the current state of the activity, given the object being processed.
         /// </summary>
         [Parameter()]
-        public ScriptBlock Status { get; set; }
+        public ScriptBlock? Status { get; set; }
 
         /// <summary>
         /// Specifies a script block expression that gets text that describes the operation that's currently taking place. This parameter has no effect when the progress view is set to <c>Minimal</c>.
         /// </summary>
         [Parameter()]
-        public ScriptBlock CurrentOperation { get; set; }
+        public ScriptBlock? CurrentOperation { get; set; }
 
         /// <summary>
         /// Specifies the interval at which progress should be returned.
@@ -80,21 +80,21 @@ namespace PSProgress.Commands
         {
             base.ProcessRecord();
 
-            var session = new ProgressSession(Activity, MyInvocation.BoundParameters.ContainsKey(nameof(Id)) ? (int?)Id : null)
+            var session = new ProgressSession(this.Activity, this.MyInvocation.BoundParameters.ContainsKey(nameof(this.Id)) ? (int?)this.Id : null)
             {
-                ParentId = MyInvocation.BoundParameters.ContainsKey(nameof(ParentId)) ? (int?)ParentId : null,
-                Status = Status,
-                CurrentOperation = CurrentOperation,
+                ParentId = this.MyInvocation.BoundParameters.ContainsKey(nameof(this.ParentId)) ? (int?)this.ParentId : null,
+                Status = this.Status,
+                CurrentOperation = this.CurrentOperation,
                 Context = new ProgressContext
                 {
-                    DisplayThreshold = DisplayThreshold,
-                    ExpectedItemCount = ExpectedCount,
-                    MinimumTimeLeftToDisplay = MinimumTimeLeftToDisplay,
-                    RefreshInterval = RefreshInterval,
+                    DisplayThreshold = this.DisplayThreshold,
+                    ExpectedItemCount = this.ExpectedCount,
+                    MinimumTimeLeftToDisplay = this.MinimumTimeLeftToDisplay,
+                    RefreshInterval = this.RefreshInterval,
                 },
             };
 
-            WriteObject(session);
+            this.WriteObject(session);
         }
 
         #endregion
