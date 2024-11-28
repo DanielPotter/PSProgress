@@ -60,7 +60,7 @@ namespace PSProgress.Commands
         [Parameter(
             ValueFromPipeline = true
         )]
-        public object[] InputObject { get; set; } = [];
+        public object[]? InputObject { get; set; } = [];
 
         /// <summary>
         /// Specifies the first line of text in the heading above the status bar. This text describes the activity whose progress is being reported.
@@ -173,7 +173,12 @@ namespace PSProgress.Commands
             if (this.progressSession is null)
             {
                 // This should never happen because BeginProcessing is always called before ProcessRecord.
-                throw new InvalidOperationException($"Field {nameof(this.progressSession)} is null in {nameof(this.ProcessRecord)}");
+                throw new PSInvalidOperationException($"Field {nameof(this.progressSession)} is null in {nameof(this.ProcessRecord)}");
+            }
+
+            if (this.InputObject is null)
+            {
+                return;
             }
 
             if (this.autoCountItems)
@@ -207,7 +212,7 @@ namespace PSProgress.Commands
             if (this.progressSession is null)
             {
                 // This should never happen because BeginProcessing is always called before EndProcessing.
-                throw new InvalidOperationException($"Field {nameof(this.progressSession)} is null in {nameof(this.EndProcessing)}");
+                throw new PSInvalidOperationException($"Field {nameof(this.progressSession)} is null in {nameof(this.EndProcessing)}");
             }
 
             if (this.autoCountItems)
