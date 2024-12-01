@@ -2,6 +2,8 @@
 
 PSProgress is a PowerShell module that provides a cmdlet to make writing progress easier. This module aims to simplify the process of creating and managing progress bars in your PowerShell scripts.
 
+![](preview.gif)
+
 ## Features
 
 - **Easy-to-use**: Simplify the creation of progress bars.
