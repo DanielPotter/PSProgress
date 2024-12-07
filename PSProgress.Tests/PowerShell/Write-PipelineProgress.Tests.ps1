@@ -2,10 +2,18 @@ BeforeAll {
     $Script:DefaultDateTimeProvider = [PSProgress.DateTimeProvider]::Default
     $Script:ProgressCompletePattern = 'Progress (?<id>\d+), Activity=<(?<activity>[^>]*)>, Completed'
     $Script:ProgressProcessingPattern = 'Progress (?<id>\d+), Activity=<(?<activity>[^>]*)>, Status=<(?<status>[^>]*)>, Operation=<(?<operation>[^>]*)>, PercentComplete=<(?<percentComplete>-?\d*)>, SecondsRemaining=<(?<secondsRemaining>-?\d*)>'
+
+    $Script:StartTime = Get-Date -Year 2024 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0
+
+    $Script:ForceDisplayParameters = @{
+        # Setting these to 0 will force progress to always be written.
+        RefreshInterval = New-TimeSpan
+        DisplayThreshold = New-TimeSpan
+        MinimumTimeLeftToDisplay = New-TimeSpan
+    }
 }
 
 Describe 'Write-PipelineProgress' {
-
     BeforeEach {
         [PSProgress.DateTimeProvider]::Default = $Script:DefaultDateTimeProvider
     }
@@ -18,6 +26,12 @@ Describe 'Write-PipelineProgress' {
         $items = 1..4
         $activity = "Counting"
         $expectedResults = @(
+            $items | ForEach-Object {
+                @{
+                    Activity = $activity
+                    Status = "Collecting"
+                }
+            }
             @{
                 Activity = $activity
                 PercentComplete = 0
@@ -48,15 +62,8 @@ Describe 'Write-PipelineProgress' {
             }
         )
 
-        $forceDisplayParameters = @{
-            # Setting these to 0 will force progress to always be written.
-            RefreshInterval = New-TimeSpan
-            DisplayThreshold = New-TimeSpan
-            MinimumTimeLeftToDisplay = New-TimeSpan
-        }
-
         $resultIndex = [ref] 0
-        $items | Write-PipelineProgress -Activity $activity @forceDisplayParameters -Debug 5>&1 | ForEach-Object {
+        $items | Write-PipelineProgress -Activity $activity @Script:ForceDisplayParameters -Debug 5>&1 | ForEach-Object {
             $expectedResult = $expectedResults[$resultIndex.Value]
             if ($expectedResult -is [int]) {
                 $_ | Should -Be $expectedResult
@@ -67,7 +74,7 @@ Describe 'Write-PipelineProgress' {
                 if ($expectedResult.Complete) {
                     $_.Message | Should -Match $Script:ProgressCompletePattern
                     if ($_.Message -match $Script:ProgressCompletePattern) {
-                        if ($expectedResult.Activity) {
+                        if ($null -ne $expectedResult.Activity) {
                             $Matches.activity | Should -Be $expectedResult.Activity
                         }
                     }
@@ -75,8 +82,11 @@ Describe 'Write-PipelineProgress' {
                 else {
                     $_.Message | Should -Match $Script:ProgressProcessingPattern
                     if ($_.Message -match $Script:ProgressProcessingPattern) {
-                        if ($expectedResult.Activity) {
+                        if ($null -ne $expectedResult.Activity) {
                             $Matches.activity | Should -Be $expectedResult.Activity
+                        }
+                        if ($null -ne $expectedResult.Status) {
+                            $Matches.status | Should -Be $expectedResult.Status
                         }
                         if ($null -ne $expectedResult.PercentComplete) {
                             [int] $Matches.percentComplete | Should -Be $expectedResult.PercentComplete
@@ -91,17 +101,21 @@ Describe 'Write-PipelineProgress' {
         }
     }
 
+    It 'Does not write progress for single item by default' {
+        $mockDateTimeProvider = [PSProgress.Tests.MockDateTimeProvider]::new()
+        $mockDateTimeProvider.CurrentTime = $Script:StartTime
+        [PSProgress.DateTimeProvider]::Default = $mockDateTimeProvider
+
+        $expectedResult = 'Value'
+        $result = $expectedResult | Write-PipelineProgress -Activity "Activity" -Debug 5>&1 | Select-Object -First 1
+
+        $result | Should -BeExactly $expectedResult
+    }
+
     Context 'Status' {
         It 'Executes with $_ automatic variable' {
-            $forceDisplayParameters = @{
-                # Setting these to 0 will force progress to always be written.
-                RefreshInterval = New-TimeSpan
-                DisplayThreshold = New-TimeSpan
-                MinimumTimeLeftToDisplay = New-TimeSpan
-            }
-
             $expectedValue = 42
-            $result = $expectedValue | Write-PipelineProgress -Activity "Activity" @forceDisplayParameters -Status { $_ } -Debug 5>&1 | Select-Object -First 1
+            $result = $expectedValue | Write-PipelineProgress -Activity "Activity" @Script:ForceDisplayParameters -Status { $_ } -Debug 5>&1 | Select-Object -Index 1
 
             $result | Should -BeOfType [System.Management.Automation.DebugRecord]
             $result.Message | Should -Match $Script:ProgressProcessingPattern
@@ -111,15 +125,8 @@ Describe 'Write-PipelineProgress' {
         }
 
         It 'Can access local variables' {
-            $forceDisplayParameters = @{
-                # Setting these to 0 will force progress to always be written.
-                RefreshInterval = New-TimeSpan
-                DisplayThreshold = New-TimeSpan
-                MinimumTimeLeftToDisplay = New-TimeSpan
-            }
-
             $expectedValue = 42
-            $result = 1 | Write-PipelineProgress -Activity "Activity" @forceDisplayParameters -Status { $expectedValue } -Debug 5>&1 | Select-Object -First 1
+            $result = 1 | Write-PipelineProgress -Activity "Activity" @Script:ForceDisplayParameters -Status { $expectedValue } -Debug 5>&1 | Select-Object -Index 1
 
             $result | Should -BeOfType [System.Management.Automation.DebugRecord]
             $result.Message | Should -Match $Script:ProgressProcessingPattern
@@ -131,15 +138,8 @@ Describe 'Write-PipelineProgress' {
 
     Context 'CurrentOperation' {
         It 'Executes with $_ automatic variable' {
-            $forceDisplayParameters = @{
-                # Setting these to 0 will force progress to always be written.
-                RefreshInterval = New-TimeSpan
-                DisplayThreshold = New-TimeSpan
-                MinimumTimeLeftToDisplay = New-TimeSpan
-            }
-
             $expectedValue = 42
-            $result = $expectedValue | Write-PipelineProgress -Activity "Activity" @forceDisplayParameters -CurrentOperation { $_ } -Debug 5>&1 | Select-Object -First 1
+            $result = $expectedValue | Write-PipelineProgress -Activity "Activity" @Script:ForceDisplayParameters -CurrentOperation { $_ } -Debug 5>&1 | Select-Object -Index 1
 
             $result | Should -BeOfType [System.Management.Automation.DebugRecord]
             $result.Message | Should -Match $Script:ProgressProcessingPattern
@@ -149,15 +149,8 @@ Describe 'Write-PipelineProgress' {
         }
 
         It 'Can access local variables' {
-            $forceDisplayParameters = @{
-                # Setting these to 0 will force progress to always be written.
-                RefreshInterval = New-TimeSpan
-                DisplayThreshold = New-TimeSpan
-                MinimumTimeLeftToDisplay = New-TimeSpan
-            }
-
             $expectedValue = 42
-            $result = 1 | Write-PipelineProgress -Activity "Activity" @forceDisplayParameters -CurrentOperation { $expectedValue } -Debug 5>&1 | Select-Object -First 1
+            $result = 1 | Write-PipelineProgress -Activity "Activity" @Script:ForceDisplayParameters -CurrentOperation { $expectedValue } -Debug 5>&1 | Select-Object -Index 1
 
             $result | Should -BeOfType [System.Management.Automation.DebugRecord]
             $result.Message | Should -Match $Script:ProgressProcessingPattern

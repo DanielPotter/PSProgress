@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
+using System.Threading;
 
 namespace PSProgress.Commands
 {
@@ -185,13 +186,17 @@ namespace PSProgress.Commands
             {
                 if (this.InputObject.Length > 0)
                 {
-                    this.WriteProgress(new ProgressRecord(
-                        activityId: this.progressSession.ActivityId,
-                        activity: this.progressSession.Activity,
-                        statusDescription: this.progressSession.Status?.InvokeInline(this.InputObject[0])?.ToString() ?? "Collecting")
+                    var progressInfo = this.progressSession.Context.CheckTime();
+                    if (progressInfo is not null)
                     {
-                        CurrentOperation = "Collecting",
-                    });
+                        this.WriteProgressInternal(new ProgressRecord(
+                            activityId: this.progressSession.ActivityId,
+                            activity: this.progressSession.Activity,
+                            statusDescription: this.progressSession.Status?.InvokeInline(this.InputObject[0])?.ToString() ?? "Collecting")
+                        {
+                            CurrentOperation = "Collecting",
+                        });
+                    }
                 }
 
                 this.allItems.AddRange(this.InputObject);
@@ -221,6 +226,17 @@ namespace PSProgress.Commands
                 if (this.allItems.Count == 0)
                 {
                     return;
+                }
+
+                if (this.progressSession.Context.ProcessedItemCount == 0 && this.progressSession.Context.LastProgressDisplayTime.HasValue)
+                {
+                    // Delay handling the first item if we wrote the collection progress recently.
+                    var timeSinceLastDisplay = DateTime.Now - this.progressSession.Context.LastProgressDisplayTime.Value;
+                    var timeToWait = ProgressContext.MinimumRefreshInterval - timeSinceLastDisplay;
+                    if (timeToWait > TimeSpan.Zero)
+                    {
+                        Thread.Sleep(timeToWait);
+                    }
                 }
 
                 foreach (var item in this.allItems)
