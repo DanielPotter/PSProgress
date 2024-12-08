@@ -61,6 +61,64 @@ namespace PSProgress.Tests
         }
 
         [TestMethod]
+        public void AddSample_DuringMinimumTimeLeftBeforeDisplay_NoProgress()
+        {
+            var mockDateTimeProvider = new MockDateTimeProvider(InitialTime);
+            var progressContext = new ProgressContext
+            {
+                TimeProvider = mockDateTimeProvider,
+                DisplayThreshold = TimeSpan.FromSeconds(2),
+                RefreshInterval = TimeSpan.FromSeconds(1),
+                MinimumTimeLeftToDisplay = TimeSpan.FromSeconds(3),
+                ExpectedItemCount = 4,
+            };
+
+            // 25%
+            Assert.IsNull(progressContext.AddSample());
+
+            mockDateTimeProvider.CurrentTime += TimeSpan.FromSeconds(1);
+
+            // 50%
+            Assert.IsNull(progressContext.AddSample());
+
+            mockDateTimeProvider.CurrentTime += TimeSpan.FromSeconds(1);
+
+            // 75%
+            var progressInfo = progressContext.AddSample();
+            Assert.IsNull(progressInfo);
+        }
+
+        [TestMethod]
+        public void AddSample_DuringMinimumTimeLeftAfterDisplay_ReturnsProgress()
+        {
+            var mockDateTimeProvider = new MockDateTimeProvider(InitialTime);
+            var progressContext = new ProgressContext
+            {
+                TimeProvider = mockDateTimeProvider,
+                DisplayThreshold = TimeSpan.Zero,
+                RefreshInterval = TimeSpan.FromSeconds(1),
+                MinimumTimeLeftToDisplay = TimeSpan.FromSeconds(3),
+                ExpectedItemCount = 4,
+            };
+
+            // 25%
+            progressContext.AddSample();
+
+            mockDateTimeProvider.CurrentTime += TimeSpan.FromSeconds(1);
+
+            // 50%
+            progressContext.AddSample();
+
+            mockDateTimeProvider.CurrentTime += TimeSpan.FromSeconds(1);
+
+            // 75%
+            var progressInfo = progressContext.AddSample();
+            Assert.IsNotNull(progressInfo, $"{nameof(progressInfo)} should not be null");
+            Assert.IsNotNull(progressInfo.EstimatedTimeRemaining, $"{nameof(progressInfo.EstimatedTimeRemaining)} should not be null");
+            Assert.AreEqual(expected: 2.0, actual: progressInfo.EstimatedTimeRemaining.Value.TotalSeconds);
+        }
+
+        [TestMethod]
         public void CheckTime_CalledTwiceWithNoDisplayThresholdOrRefreshInterval_ReturnsProgressInfo()
         {
             var mockDateTimeProvider = new MockDateTimeProvider(InitialTime);

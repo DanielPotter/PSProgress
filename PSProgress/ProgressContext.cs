@@ -89,10 +89,7 @@ namespace PSProgress
         public SampledProgressInfo? CheckTime()
         {
             DateTime now = this.TimeProvider.GetCurrentTime();
-            if (this.startTime is null)
-            {
-                this.startTime = now;
-            }
+            this.startTime ??= now;
 
             bool writeProgress = true;
             if (this.IsBetweenRefreshIntervals(now))
@@ -103,19 +100,22 @@ namespace PSProgress
             {
                 writeProgress = false;
             }
-            else if (this.IsEnoughTimeToDisplay(now))
+            else if (this.LastProgressDisplayTime is null && this.IsEnoughTimeToDisplay())
             {
                 writeProgress = false;
+            }
+
+            if (this.isSampling)
+            {
+                if (writeProgress || this.progressSampleCollection.Count < this.progressSampleCollection.Capacity)
+                {
+                    this.progressSampleCollection.Add(new ProgressSample(this.ProcessedItemCount, now));
+                }
             }
 
             SampledProgressInfo? sampledProgressInfo = null;
             if (writeProgress)
             {
-                if (this.isSampling)
-                {
-                    this.progressSampleCollection.Add(new ProgressSample(this.ProcessedItemCount, now));
-                }
-
                 this.LastProgressDisplayTime = now;
 
                 uint remainingItems = this.ExpectedItemCount - this.ProcessedItemCount;
@@ -164,7 +164,7 @@ namespace PSProgress
             return false;
         }
 
-        private bool IsEnoughTimeToDisplay(DateTime testTime)
+        private bool IsEnoughTimeToDisplay()
         {
             if (this.MinimumTimeLeftToDisplay.Ticks > 0 && this.isSampling)
             {
