@@ -12,7 +12,7 @@
 RootModule = 'PSProgress.dll'
 
 # Version number of this module.
-ModuleVersion = '1.0'
+ModuleVersion = '1.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -33,7 +33,7 @@ Copyright = '(c) Daniel Potter. All rights reserved.'
 Description = 'This module provides a cmdlet that simplifies the process of creating and managing progress bars in your PowerShell scripts.'
 
 # Minimum version of the PowerShell engine required by this module
-# PowerShellVersion = ''
+PowerShellVersion = '7.4'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''
@@ -107,7 +107,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = 'Fixed an issue where progress for the first item does not display when collecting items before processing.'
 
         # Prerelease string of this module
         # Prerelease = ''
